@@ -31,28 +31,25 @@
 /**
  * \file 
  * 
- * Implementation of MongoMessageCollection
+ * Implementation of DummyMessageCollection
  *
  * \author Bhaskara Marthi
  */
 
-#include <warehouse_ros_mongo/message_collection.h>
+#include <warehouse_ros_dummy/message_collection.h>
 #include <std_msgs/String.h>
+#include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
-#ifdef WAREHOUSE_ROS_MONGO_HAVE_MONGO_VERSION_H
-#include <mongo/version.h>
-#endif
 
-namespace warehouse_ros_mongo
+namespace warehouse_ros_dummy
 {
 
 using std::string;
 
-MongoMessageCollection::MongoMessageCollection(boost::shared_ptr<mongo::DBClientConnection> conn,
+DummyMessageCollection::DummyMessageCollection(boost::shared_ptr<dummy::DBClientConnection> conn,
                                                const string& db,
                                                const string& coll) :
   conn_(conn),
-  gfs_(new mongo::GridFS(*conn, db)),
   ns_(db+"."+coll),
   db_(db),
   coll_(coll)
@@ -60,7 +57,7 @@ MongoMessageCollection::MongoMessageCollection(boost::shared_ptr<mongo::DBClient
 }
 
 
-bool MongoMessageCollection::initialize(const std::string& datatype, const std::string& md5)
+bool DummyMessageCollection::initialize(const std::string& datatype, const std::string& md5)
 {
   ensureIndex("creation_time");
 
@@ -79,50 +76,51 @@ bool MongoMessageCollection::initialize(const std::string& datatype, const std::
   return true;
 }
 
-void MongoMessageCollection::ensureIndex(const string& field)
+void DummyMessageCollection::ensureIndex(const string& field)
 {
-#if (MONGOCLIENT_VERSION_MAJOR >= 1)
+  ROS_ERROR("%s(%s)", __PRETTY_FUNCTION__, field.c_str()); // FIXME
+  /*
+#if (DUMMYCLIENT_VERSION_MAJOR >= 1)
   conn_->createIndex(ns_, BSON(field << 1));
 #else
   conn_->ensureIndex(ns_, BSON(field << 1));
 #endif
+  */
 }
 
-void MongoMessageCollection::insert(char* msg, size_t msg_size, Metadata::ConstPtr metadata)
+void DummyMessageCollection::insert(char* msg, size_t msg_size, Metadata::ConstPtr metadata)
 {
   /// Get the BSON and id from the metadata
-  mongo::BSONObj bson = downcastMetadata(metadata);
-  mongo::OID id;
+  bson::BSONObj bson = downcastMetadata(metadata);
+  bson::OID id;
   bson["_id"].Val(id);
 
-  // Store in message in grid fs
-  mongo::BSONObj file_obj = gfs_->storeFile(msg, msg_size, id.toString());
-
   // Add blob id to metadata and store it in the message collection
-  mongo::BSONObjBuilder builder;
+  bson::BSONObjBuilder builder;
   builder.appendElements(bson);
-  mongo::OID blob_id;
-  file_obj["_id"].Val(blob_id);
-  builder.append("blob_id", blob_id);
-  mongo::BSONObj entry = builder.obj();
+
+  // Store in message in
+  builder.appendBinData(id.toString(), msg_size, bson::BinDataType::BinDataGeneral, (const uint8_t *)msg);
+
+  bson:BSONObj entry = builder.obj();
   ROS_DEBUG_NAMED("insert", "Inserting %s into %s", entry.toString().c_str(), ns_.c_str());
   conn_->insert(ns_, entry);
 }
 
-ResultIteratorHelper::Ptr MongoMessageCollection::query(Query::ConstPtr query,
+ResultIteratorHelper::Ptr DummyMessageCollection::query(Query::ConstPtr query,
                                                         const string& sort_by,
                                                         bool ascending) const
 {
-  mongo::Query mquery(downcastQuery(query));
+  dummy::Query mquery(downcastQuery(query));
   if (sort_by.size() > 0)
     mquery.sort(sort_by, ascending ? 1 : -1);
   ROS_DEBUG_NAMED("query", "Sending query %s to %s", mquery.toString().c_str(), ns_.c_str());
-  return typename ResultIteratorHelper::Ptr(new MongoResultIterator(conn_, gfs_, ns_, mquery));
+  return typename ResultIteratorHelper::Ptr(new DummyResultIterator(conn_, ns_, mquery));
 }
 
-void MongoMessageCollection::listMetadata(mongo::Query& mquery, std::vector<mongo::BSONObj>& metas)
+void DummyMessageCollection::listMetadata(dummy::Query& mquery, std::vector<bson::BSONObj>& metas)
 {
-  MongoResultIterator iter(conn_, gfs_, ns_, mquery);
+  DummyResultIterator iter(conn_, ns_, mquery);
   while (iter.hasData())
   {
     metas.push_back(iter.metadataRaw());
@@ -130,11 +128,11 @@ void MongoMessageCollection::listMetadata(mongo::Query& mquery, std::vector<mong
   }
 }
 
-unsigned MongoMessageCollection::removeMessages(Query::ConstPtr query)
+unsigned DummyMessageCollection::removeMessages(Query::ConstPtr query)
 {
-  mongo::Query mquery(downcastQuery(query));
+  dummy::Query mquery(downcastQuery(query));
   
-  std::vector<mongo::BSONObj> metas;
+  std::vector<bson::BSONObj> metas;
   listMetadata(mquery, metas);
 
   // Remove messages from db
@@ -142,48 +140,52 @@ unsigned MongoMessageCollection::removeMessages(Query::ConstPtr query)
 
   unsigned num_removed = 0;
   // Also remove the raw messages from gridfs
-  for (std::vector<mongo::BSONObj>::iterator it = metas.begin(); it != metas.end(); ++it)
+  for (std::vector<bson::BSONObj>::iterator it = metas.begin(); it != metas.end(); ++it)
   {
-    mongo::OID id;
-    (*it)["blob_id"].Val(id);
-    gfs_->removeFile(id.toString());
+    // dummy::OID id;
+    // (*it)["blob_id"].Val(id);
+    // gfs_->removeFile(id.toString());
     ++num_removed;
   }
   return num_removed;
 }
 
-void MongoMessageCollection::modifyMetadata(Query::ConstPtr q, Metadata::ConstPtr m)
+void DummyMessageCollection::modifyMetadata(Query::ConstPtr q, Metadata::ConstPtr m)
 {
-  mongo::BSONObj bson = downcastMetadata(m);
-  mongo::Query query(downcastQuery(q));
+  bson::BSONObj bson = downcastMetadata(m);
+  dummy::Query query(downcastQuery(q));
 
-  std::vector<mongo::BSONObj> metas;
+  std::vector<bson::BSONObj> metas;
   listMetadata(query, metas);
   if (metas.size() == 0)
     throw warehouse_ros::NoMatchingMessageException(coll_);
-  mongo::BSONObj orig = metas.front();
-  mongo::BSONObjBuilder new_meta_builder;
+  bson::BSONObj orig = metas.front();
+  bson::BSONObjBuilder new_meta_builder;
 
   std::set<std::string> fields;
   bson.getFieldNames(fields);
 
-  BOOST_FOREACH (const string& f, fields) 
+  BOOST_FOREACH (const string& f, fields)
   {
-    if ((f!="_id") && (f!="creation_time")) 
-      new_meta_builder.append(BSON("$set" << BSON(f << bson.getField(f))).\
-                              getField("$set"));
+    if ((f!="_id") && (f!="creation_time")) {
+      // new_meta_builder.append(BSON("$set" << BSON(f << bson.getField(f))).\
+      //                         getField("$set"));
+      new_meta_builder.append(BSON(f<<bson.getField(f)).getField(f));
+      //if ( bson.hasField(f) ) { FIXME
+      //  new_meta[f] = bson.getField(f);
+      //}
+    }
   }
-
-  mongo::BSONObj new_meta = new_meta_builder.obj().copy();
+  bson::BSONObj new_meta = new_meta_builder.obj();
   conn_->update(ns_, query, new_meta);
 }
 
-unsigned MongoMessageCollection::count()
+unsigned DummyMessageCollection::count()
 {
   return conn_->count(ns_);
 }
 
-string MongoMessageCollection::collectionName() const
+string DummyMessageCollection::collectionName() const
 {
   return coll_;
 }

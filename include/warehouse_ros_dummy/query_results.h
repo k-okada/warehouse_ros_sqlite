@@ -28,70 +28,50 @@
  *
  */
 
-#include <geometry_msgs/Pose.h>
-#include <cstring>
-#include <warehouse_ros/message_with_metadata.h>
+/**
+ * \file 
+ * 
+ * Implementation of warehouse_ros::ResultIteratorHelper for dummy queries
+ *
+ * \author Bhaskara Marthi
+ */
 
-const double TOL=1e-3;
-using std::ostream;
+#ifndef WAREHOUSE_ROS_DUMMY_QUERY_RESULTS_H
+#define WAREHOUSE_ROS_DUMMY_QUERY_RESULTS_H
 
-namespace geometry_msgs
+#include <warehouse_ros/query_results.h>
+#include <warehouse_ros_dummy/client.h>
+#include <warehouse_ros_dummy/metadata.h>
+#include <warehouse_ros/query_results.h>
+#include <boost/optional.hpp>
+#include <memory>
+
+namespace warehouse_ros_dummy
 {
 
-inline bool operator==(const Pose& p1, const Pose& p2)
+// To avoid some const-correctness issues we wrap Dummy's returned auto_ptr in
+// another pointer
+typedef std::auto_ptr<dummy::DBClientCursor> Cursor;
+typedef boost::shared_ptr<Cursor> CursorPtr;
+
+class DummyResultIterator : public warehouse_ros::ResultIteratorHelper
 {
-  const Point& pos1 = p1.position;
-  const Point& pos2 = p2.position;
-  const Quaternion& q1 = p1.orientation;
-  const Quaternion& q2 = p2.orientation;
-  return (pos1.x == pos2.x) && (pos1.y == pos2.y) && (pos1.z == pos2.z) &&
-    (q1.x == q2.x) && (q1.y == q2.y) && (q1.z == q2.z) && (q1.w == q2.w);
-}
+public:
+  DummyResultIterator(boost::shared_ptr<dummy::DBClientConnection> conn,
+                      const std::string& ns,
+                      const dummy::Query& query);
 
-}
+  bool next();
+  bool hasData() const;
+  warehouse_ros::Metadata::ConstPtr metadata() const;
+  std::string message() const;
+  bson::BSONObj metadataRaw() const;
 
-inline MongoMetadata& downcastMetadata(Metadata::ConstPtr metadata) const {
-  return *(const_cast<MongoMetadata*>(static_cast<const MongoMetadata*>(metadata.get())));
-}
+private:
+  CursorPtr cursor_;
+  boost::optional<bson::BSONObj> next_;
+};
 
-inline MongoQuery& downcastQuery(Query::ConstPtr query) const {
-  return *(const_cast<MongoQuery*>(static_cast<const MongoQuery*>(query.get())));
-}
+} // namespace
 
-template <class T>
-ostream& operator<<(ostream& str, const warehouse_ros::MessageWithMetadata<T>& s)
-{
-  const T& msg = s;
-  str << "Message: " << msg;
-  str << "\nMetadata: " << downcastMetadata(s.metadata).toString();
-  return str;
-}
-
-
-geometry_msgs::Quaternion createQuaternionMsgFromYaw(double yaw)
-{
-  geometry_msgs::Quaternion q;
-  q.w = cos(yaw/2);
-  q.z = sin(yaw/2);
-  q.x = 0;
-  q.y = 0;
-  return q;
-}
-
-
-inline geometry_msgs::Pose makePose(const double x, const double y, const double theta)
-{
-  geometry_msgs::Pose p;
-  p.position.x = x;
-  p.position.y = y;
-  p.orientation = createQuaternionMsgFromYaw(theta);
-  return p;
-}
-
-using std::string;
-
-bool contains (const string& s1, const string& s2)
-{
-  return strstr(s1.c_str(), s2.c_str())!=NULL;
-}
-
+#endif // include guard

@@ -36,22 +36,22 @@
  * \author Bhaskara Marthi
  */
 
-#include <warehouse_ros_mongo/database_connection.h>
+#include <warehouse_ros_dummy/database_connection.h>
 #include <pluginlib/class_list_macros.h>
 
-namespace warehouse_ros_mongo
+namespace warehouse_ros_dummy
 {
 
 using std::string;
 
-MongoDatabaseConnection::MongoDatabaseConnection() :
+DummyDatabaseConnection::DummyDatabaseConnection() :
   host_("localhost"),
   port_(27017),
   timeout_(60.0)
 {
 }
 
-bool MongoDatabaseConnection::setParams(const string& host, unsigned port, float timeout)
+bool DummyDatabaseConnection::setParams(const string& host, unsigned port, float timeout)
 {
   host_ = host;
   port_ = port;
@@ -59,28 +59,28 @@ bool MongoDatabaseConnection::setParams(const string& host, unsigned port, float
   return true;
 }
 
-bool MongoDatabaseConnection::setTimeout(float timeout)
+bool DummyDatabaseConnection::setTimeout(float timeout)
 {
   timeout_ = timeout;
   return true;
 }
 
-bool MongoDatabaseConnection::connect()
+bool DummyDatabaseConnection::connect()
 {
   const string db_address = (boost::format("%1%:%2%") % host_ % port_).str();
   const ros::WallTime end = ros::WallTime::now() + ros::WallDuration(timeout_);
 
   while (ros::ok() && ros::WallTime::now()<end)
   {
-    conn_.reset(new mongo::DBClientConnection());
+    conn_.reset(new dummy::DBClientConnection());
     try
     {
-      ROS_DEBUG_STREAM_NAMED("db_connect", "Attempting to connect to MongoDB at " << db_address);
+      ROS_DEBUG_STREAM_NAMED("db_connect", "Attempting to connect to DummyDB at " << db_address);
       conn_->connect(db_address);
       if (!conn_->isFailed())
         break;
     }
-    catch (mongo::ConnectException& e)
+    catch (warehouse_ros::DbConnectException& e)
     {
       ros::Duration(1.0).sleep();
     }
@@ -95,34 +95,38 @@ bool MongoDatabaseConnection::connect()
   return true;
 }
 
-bool MongoDatabaseConnection::isConnected()
+bool DummyDatabaseConnection::isConnected()
 {
   return ((bool)conn_ && !conn_->isFailed());
 }
 
-void MongoDatabaseConnection::dropDatabase(const string& db_name)
+void DummyDatabaseConnection::dropDatabase(const string& db_name)
 {
   if (!isConnected())
     throw warehouse_ros::DbConnectException("Cannot drop database");
   conn_->dropDatabase(db_name);
 }
 
-string MongoDatabaseConnection::messageType(const string& db, const string& coll)
+string DummyDatabaseConnection::messageType(const string& db, const string& coll)
 {
   if (!isConnected())
     throw warehouse_ros::DbConnectException("Cannot look up metatable.");
   const string meta_ns = db+".ros_message_collections";
-  std::auto_ptr<mongo::DBClientCursor> cursor = conn_->query(meta_ns, BSON("name" << coll));
-  mongo::BSONObj obj = cursor->next();
+  std::auto_ptr<dummy::DBClientCursor> cursor = conn_->query(meta_ns, BSON("name" << coll));
+  bson::BSONObj obj = cursor->next();
   return obj.getStringField("type");
+  //bson::BSONObj obj = cursor->next_; // FIXME
+  //return obj.getStringField("type");
+  //boost::optional<WrappedBSON> obj = cursor->next_;
+  //return obj.get().getStringField("type");
 }
 
-MessageCollectionHelper::Ptr MongoDatabaseConnection::openCollectionHelper(const std::string& db_name,
+MessageCollectionHelper::Ptr DummyDatabaseConnection::openCollectionHelper(const std::string& db_name,
                                                                            const std::string& collection_name)
 {
-  return typename MessageCollectionHelper::Ptr(new MongoMessageCollection(conn_, db_name, collection_name));
+  return typename MessageCollectionHelper::Ptr(new DummyMessageCollection(conn_, db_name, collection_name));
 }
 
 } // namespace
 
-PLUGINLIB_EXPORT_CLASS( warehouse_ros_mongo::MongoDatabaseConnection, warehouse_ros::DatabaseConnection )
+PLUGINLIB_EXPORT_CLASS( warehouse_ros_dummy::DummyDatabaseConnection, warehouse_ros::DatabaseConnection )

@@ -31,28 +31,26 @@
 /**
  * \file 
  * 
- * Implementation of MongoResultIterator.
+ * Implementation of DummyResultIterator.
  *
  * \author Bhaskara Marthi
  */
 
-#include <warehouse_ros_mongo/query_results.h>
+#include <warehouse_ros_dummy/query_results.h>
 
-namespace warehouse_ros_mongo
+namespace warehouse_ros_dummy
 {
 
-MongoResultIterator::MongoResultIterator(boost::shared_ptr<mongo::DBClientConnection> conn,
-                                         boost::shared_ptr<mongo::GridFS> gfs,
+DummyResultIterator::DummyResultIterator(boost::shared_ptr<dummy::DBClientConnection> conn,
                                          const std::string& ns,
-                                         const mongo::Query& query) :
-  cursor_(new Cursor(conn->query(ns, query))),
-  gfs_(gfs)
+                                         const dummy::Query& query) :
+  cursor_(new Cursor(conn->query(ns, query)))
 {
   if ((*cursor_)->more())
     next_ = (*cursor_)->nextSafe();
 }
 
-bool MongoResultIterator::next()
+bool DummyResultIterator::next()
 {
   ROS_ASSERT (next_);
   if ((*cursor_)->more())\
@@ -67,33 +65,31 @@ bool MongoResultIterator::next()
   }
 }
 
-bool MongoResultIterator::hasData() const
+bool DummyResultIterator::hasData() const
 {
   return (bool)next_;
 }
 
-warehouse_ros::Metadata::ConstPtr MongoResultIterator::metadata() const
+warehouse_ros::Metadata::ConstPtr DummyResultIterator::metadata() const
 {
   ROS_ASSERT(next_);
-  return typename warehouse_ros::Metadata::ConstPtr(new MongoMetadata(next_->copy()));
+  //return typename warehouse_ros::Metadata::ConstPtr(new DummyMetadata(next_->copy())); // FIXME
+  return typename warehouse_ros::Metadata::ConstPtr(new DummyMetadata(next_.get()));
 }
 
-std::string MongoResultIterator::message() const
+std::string DummyResultIterator::message() const
 {
-  mongo::OID blob_id;
-  (*next_)["blob_id"].Val(blob_id);
-  mongo::BSONObj q = BSON ("_id" << blob_id);
-  mongo::GridFile f = gfs_->findFile(q);
-  ROS_ASSERT(f.exists());
-  std::stringstream ss (std::ios_base::out);
-  f.write(ss);
-  return ss.str();
+  std::string id = (*next_)["_id"].OID().toString();
+  int len;
+  const char *buf = (*next_)[id].binData(len);
+  return std::string(buf, buf+len);
 }
 
-mongo::BSONObj MongoResultIterator::metadataRaw() const
+bson::BSONObj DummyResultIterator::metadataRaw() const
 {
   ROS_ASSERT(next_);
-  return next_->copy();
+  //return next_->copy(); // FIXME
+  return next_.get();
 }
 
 } // namespace

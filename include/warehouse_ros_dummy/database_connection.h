@@ -31,45 +31,48 @@
 /**
  * \file 
  * 
- * Implementation of warehouse_ros::ResultIteratorHelper for mongo queries
+ * Db-level operations.  Most operations are in message_collection.h
  *
  * \author Bhaskara Marthi
  */
 
-#ifndef WAREHOUSE_ROS_MONGO_QUERY_RESULTS_H
-#define WAREHOUSE_ROS_MONGO_QUERY_RESULTS_H
+#ifndef WAREHOUSE_ROS_DUMMY_DATABASE_CONNECTION_H
+#define WAREHOUSE_ROS_DUMMY_DATABASE_CONNECTION_H
 
-#include <warehouse_ros_mongo/metadata.h>
-#include <warehouse_ros/query_results.h>
-#include <boost/optional.hpp>
-#include <mongo/client/dbclientcursor.h>
-#include <memory>
+#include <warehouse_ros_dummy/client.h>
+#include <warehouse_ros_dummy/message_collection.h>
+#include <warehouse_ros/database_connection.h>
+#include <boost/shared_ptr.hpp>
 
-namespace warehouse_ros_mongo
+namespace warehouse_ros_dummy
 {
 
-// To avoid some const-correctness issues we wrap Mongo's returned auto_ptr in
-// another pointer
-typedef std::auto_ptr<mongo::DBClientCursor> Cursor;
-typedef boost::shared_ptr<Cursor> CursorPtr;
-
-class MongoResultIterator : public warehouse_ros::ResultIteratorHelper
+class DummyDatabaseConnection : public warehouse_ros::DatabaseConnection
 {
 public:
-  MongoResultIterator(boost::shared_ptr<mongo::DBClientConnection> conn,
-                      boost::shared_ptr<mongo::GridFS> gfs,
-                      const std::string& ns,
-                      const mongo::Query& query);
-  bool next();
-  bool hasData() const;
-  warehouse_ros::Metadata::ConstPtr metadata() const;
-  std::string message() const;
-  mongo::BSONObj metadataRaw() const;
+  DummyDatabaseConnection();
 
-private:
-  CursorPtr cursor_;
-  boost::optional<mongo::BSONObj> next_;
-  boost::shared_ptr<mongo::GridFS> gfs_;
+  bool setParams(const std::string& host, unsigned port, float timeout);
+
+  bool setTimeout(float timeout);
+
+  bool connect();
+
+  bool isConnected();
+
+  void dropDatabase(const std::string& db_name);
+
+  std::string messageType(const std::string& db_name, const std::string& collection_name);
+
+protected:
+  boost::shared_ptr<dummy::DBClientConnection> conn_;
+
+  std::string host_;
+  unsigned port_;
+  float timeout_;
+
+  MessageCollectionHelper::Ptr openCollectionHelper(const std::string& db_name,
+                                                    const std::string& collection_name);
 };
 
 } // namespace

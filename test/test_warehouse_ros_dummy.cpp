@@ -31,15 +31,15 @@
 /**
  * \file 
  * 
- * Test script for Mongo ros c++ interface
+ * Test script for Dummy ros c++ interface
  *
  * \author Bhaskara Marthi
  */
 
 // %Tag(CPP_CLIENT)%
 
-#include "test_mongo_helpers.h"
-#include <warehouse_ros_mongo/database_connection.h>
+#include "test_dummy_helpers.h"
+#include <warehouse_ros_dummy/database_connection.h>
 #include <boost/foreach.hpp>
 #include <gtest/gtest.h>
 
@@ -67,10 +67,10 @@ Metadata::Ptr makeMetadata(PoseCollection coll, const gm::Pose& p, const string&
   return meta;
 }
 
-TEST(MongoRos, MongoRos)
+TEST(DummyRos, DummyRos)
 {
   // Set up db
-  warehouse_ros_mongo::MongoDatabaseConnection conn;
+  warehouse_ros_dummy::DummyDatabaseConnection conn;
   conn.setParams("localhost", 27017, 60.0);
   conn.connect();
 
@@ -78,7 +78,7 @@ TEST(MongoRos, MongoRos)
   conn.dropDatabase("my_db");
   
   // Open the collection
-  PoseCollection coll = conn.openCollection("my_db", "poses");
+  PoseCollection coll = conn.openCollection<gm::Pose>(string("my_db"), string("poses"));
 
   // Arrange to index on metadata fields 'x' and 'name'
   //coll.ensureIndex("name");
@@ -99,7 +99,7 @@ TEST(MongoRos, MongoRos)
   // Simple query: find the pose with name 'qux' and return just its metadata
   // Since we're doing an equality check, we don't explicitly specify a predicate
   Query::Ptr q1 = coll.createQuery();
-  q1.append("name", "qux");
+  q1->append("name", std::string("qux"));
   vector<PoseMetaPtr> res = coll.queryList(q1, true);
   EXPECT_EQ(1u, res.size());
   EXPECT_EQ("qux", res[0]->lookupString("name"));
@@ -110,23 +110,22 @@ TEST(MongoRos, MongoRos)
   // just the metadata.  Finally, we can't use the simplified construction
   // syntax here because it's too long
   Query::Ptr q2 = coll.createQuery();
-  q2.appendLT("x", 40);
-  q2.appendGT("y", 0);
+  q2->appendLT("x", 40);
+  q2->appendGT("y", 0);
   vector<PoseMetaPtr> poses = coll.queryList(q2, false, "name", false);
-  
-  // Verify poses. 
+
+  // Verify poses.
   EXPECT_EQ(3u, poses.size());
   EXPECT_EQ(p1, *poses[0]);
   EXPECT_EQ(p2, *poses[1]);
   EXPECT_EQ(p1, *poses[2]);
-
   EXPECT_EQ("oof", poses[0]->lookupString("name"));
   EXPECT_EQ("baz", poses[1]->lookupString("name"));
   EXPECT_EQ("bar", poses[2]->lookupString("name"));
 
   // Set up query to delete some poses.
   Query::Ptr q3 = coll.createQuery();
-  q3.appendLT("y", 30);
+  q3->appendLT("y", 30);
 
   EXPECT_EQ(5u, coll.count());
   EXPECT_EQ(2u, coll.removeMessages(q3));
@@ -134,27 +133,25 @@ TEST(MongoRos, MongoRos)
 
   // Test findOne
   Query::Ptr q4 = coll.createQuery();
-  q4.append("name", "bar");
-  EXPECT_EQ(p1, *coll.findOne(q4, false));
+  q4->append("name", std::string("bar"));
+  EXPECT_EQ(p1, *(coll.findOne(q4, false)));
   EXPECT_DOUBLE_EQ(24, coll.findOne(q4, true)->lookupDouble("x"));
-
   Query::Ptr q5 = coll.createQuery();
-  q5.append("name", "barbar");
+  q5->append("name", std::string("barbar"));
   EXPECT_THROW(coll.findOne(q5, true), NoMatchingMessageException);
   EXPECT_THROW(coll.findOne(q5, false), NoMatchingMessageException);
-  
+
   // Test update
-  Query::Ptr m1 = coll.createMetadata()
-  m1.append("name", "barbar");
+  Metadata::Ptr m1 = coll.createMetadata();
+  m1->append("name", std::string("barbar"));
   coll.modifyMetadata(q4, m1);
   EXPECT_EQ(3u, coll.count());
   EXPECT_THROW(coll.findOne(q4, false), NoMatchingMessageException);
   EXPECT_EQ(p1, *coll.findOne(q5, false));
 
   // Check stored metadata
-  EXPECT_EQ("geometry_msgs/Pose", conn->messageType("my_db", "poses"));
+  EXPECT_EQ("geometry_msgs/Pose", conn.messageType("my_db", "poses"));
 }
-
 
 int main (int argc, char** argv)
 {

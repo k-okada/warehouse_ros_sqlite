@@ -36,13 +36,14 @@
  * \author Bhaskara Marthi
  */
 
-#ifndef WAREHOUSE_ROS_MONGO_MESSAGE_COLLECTION_H
-#define WAREHOUSE_ROS_MONGO_MESSAGE_COLLECTION_H
+#ifndef WAREHOUSE_ROS_DUMMY_MESSAGE_COLLECTION_H
+#define WAREHOUSE_ROS_DUMMY_MESSAGE_COLLECTION_H
 
-#include <warehouse_ros_mongo/query_results.h>
+#include <warehouse_ros_dummy/client.h>
+#include <warehouse_ros_dummy/query_results.h>
 #include <warehouse_ros/message_collection.h>
 
-namespace warehouse_ros_mongo
+namespace warehouse_ros_dummy
 {
 
 using warehouse_ros::Metadata;
@@ -50,10 +51,10 @@ using warehouse_ros::Query;
 using warehouse_ros::MessageCollectionHelper;
 using warehouse_ros::ResultIteratorHelper;
 
-class MongoMessageCollection: public warehouse_ros::MessageCollectionHelper
+class DummyMessageCollection: public warehouse_ros::MessageCollectionHelper
 {
 public:
-  MongoMessageCollection(boost::shared_ptr<mongo::DBClientConnection> conn,
+  DummyMessageCollection(boost::shared_ptr<dummy::DBClientConnection> conn,
                          const std::string& db_name,
                          const std::string& collection_name);
 
@@ -65,7 +66,7 @@ public:
 
   /// \brief Insert a ROS message, together with some optional metadata,
   /// into the db
-  /// \throws mongo::DBException if unable to insert
+  /// \throws dummy::DBException if unable to insert
   void insert(char* msg, size_t msg_size, Metadata::ConstPtr metadata);
 
   /// \retval Iterator range over matching messages
@@ -92,26 +93,25 @@ public:
   std::string collectionName() const;
 
   Query::Ptr createQuery() const {
-    return Query::Ptr(new MongoQuery());
+    return Query::Ptr(new DummyQuery());
   }
 
   Metadata::Ptr createMetadata() const {
-    return Metadata::Ptr(new MongoMetadata());
+    return Metadata::Ptr(new DummyMetadata());
   }
   
 private:
-  void listMetadata(mongo::Query& mquery, std::vector<mongo::BSONObj>& metas);
 
-  inline MongoMetadata& downcastMetadata(Metadata::ConstPtr metadata) const {
-    return *(const_cast<MongoMetadata*>(static_cast<const MongoMetadata*>(metadata.get())));
+  void listMetadata(dummy::Query& mquery, std::vector<bson::BSONObj>& metas);
+
+  inline DummyMetadata& downcastMetadata(Metadata::ConstPtr metadata) const {
+    return *(const_cast<DummyMetadata*>(static_cast<const DummyMetadata*>(metadata.get())));
+  }
+  inline DummyQuery& downcastQuery(Query::ConstPtr query) const {
+    return *(const_cast<DummyQuery*>(static_cast<const DummyQuery*>(query.get())));
   }
 
-  inline MongoQuery& downcastQuery(Query::ConstPtr query) const {
-    return *(const_cast<MongoQuery*>(static_cast<const MongoQuery*>(query.get())));
-  }
-
-  boost::shared_ptr<mongo::DBClientConnection> conn_;
-  boost::shared_ptr<mongo::GridFS> gfs_;
+  boost::shared_ptr<dummy::DBClientConnection> conn_;
   const std::string ns_;
   const std::string db_;
   const std::string coll_;

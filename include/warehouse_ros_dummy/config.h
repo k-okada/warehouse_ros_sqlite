@@ -37,18 +37,9 @@
  * \author Ioan Sucan
  */
 
-#ifndef WAREHOUSE_ROS_MONGO_CONFIG_H
-#define WAREHOUSE_ROS_MONGO_CONFIG_H
+#ifndef WAREHOUSE_ROS_DUMMY_CONFIG_H
+#define WAREHOUSE_ROS_DUMMY_CONFIG_H
 
-#cmakedefine01 MongoDB_EXPOSE_MACROS
-
-#if MongoDB_EXPOSE_MACROS
-#  define MONGO_EXPOSE_MACROS
-#  include <mongo/client/gridfs.h>
-#  include <mongo/client/undef_macros.h>
-#  undef MONGO_EXPOSE_MACROS
-#else
-#  include <mongo/client/gridfs.h>
-#endif
+#include "bson.h"
 
 #endif

@@ -31,31 +31,30 @@
 /**
  * \file 
  * 
- * Define a couple of classes that wrap Mongo's BSON type
+ * Define a couple of classes that wrap Dummy's BSON type
  *
  * \author Bhaskara Marthi
  */
 
-#ifndef WAREHOUSE_ROS_MONGO_METADATA_H
-#define WAREHOUSE_ROS_MONGO_METADATA_H
+#ifndef WAREHOUSE_ROS_DUMMY_METADATA_H
+#define WAREHOUSE_ROS_DUMMY_METADATA_H
 
 // We have to include this top-level include here because
-// the mongo c++ library is not robust to reincludes
+// the dummy c++ library is not robust to reincludes
 #ifdef __APPLE__
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>
 #endif
-#include <warehouse_ros_mongo/config.h>
+
+#include <iostream>
+#include <warehouse_ros_dummy/config.h>
 #include <warehouse_ros/metadata.h>
 
-#include <mongo/db/json.h>
-
-namespace warehouse_ros_mongo
+namespace warehouse_ros_dummy
 {
-
-using mongo::BSONObj;
-using mongo::BSONObjBuilder;
+using bson::BSONObj;
+using bson::BSONObjBuilder;
 
 /// \brief Internal parent class
 ///
@@ -84,7 +83,8 @@ public:
   WrappedBSON(const std::string& json) :
     BSONObj(), builder_(new BSONObjBuilder())
   {
-    builder_->appendElements(mongo::fromjson(json.c_str()));
+    ROS_ERROR_STREAM(__PRETTY_FUNCTION__ << " is not impremented yet");
+    //builder_->appendElements(bson::fromjson(json));
     update();
   }
 
@@ -107,19 +107,25 @@ protected:
 ///
 /// Or:
 /// q = Query().append("foo", 42).append("bar", LT, 24);
-class MongoQuery : public WrappedBSON, public warehouse_ros::Query
+class DummyQuery : public WrappedBSON, public warehouse_ros::Query
 {
 public:
-  MongoQuery() : WrappedBSON ()
+  DummyQuery() : WrappedBSON ()
   {}
 
-  MongoQuery(const MongoQuery& other) :
+  DummyQuery(const DummyQuery& other) :
     WrappedBSON(other)
   {}
 
-  MongoQuery(const BSONObj& other) :
+  DummyQuery(const BSONObj& other) :
     WrappedBSON(other)
   {}
+
+  void append(const std::string& name,
+              const char *val)
+  {
+    append(name, std::string(val));
+  }
 
   void append(const std::string& name,
               const std::string& val)
@@ -152,56 +158,56 @@ public:
   void appendLT(const std::string& name,
                 const double val)
   {
-    *builder_ << name << mongo::LT << val;
+    *builder_ << name << bson::LT << val;
     WrappedBSON::update();
   }
 
   void appendLT(const std::string& name,
                 const int val)
   {
-    *builder_ << name << mongo::LT << val;
+    *builder_ << name << bson::LT << val;
     WrappedBSON::update();
   }
 
   void appendLTE(const std::string& name,
                  const double val)
   {
-    *builder_ << name << mongo::LTE << val;
+    *builder_ << name << bson::LTE << val;
     WrappedBSON::update();
   }
 
   void appendLTE(const std::string& name,
                  const int val)
   {
-    *builder_ << name << mongo::LTE << val;
+    *builder_ << name << bson::LTE << val;
     WrappedBSON::update();
   }
 
   void appendGT(const std::string& name,
                 const double val)
   {
-    *builder_ << name << mongo::GT << val;
+    *builder_ << name << bson::GT << val;
     WrappedBSON::update();
   }
 
   void appendGT(const std::string& name,
                 const int val)
   {
-    *builder_ << name << mongo::GT << val;
+    *builder_ << name << bson::GT << val;
     WrappedBSON::update();
   }
 
   void appendGTE(const std::string& name,
                  const double val)
   {
-    *builder_ << name << mongo::GTE << val;
+    *builder_ << name << bson::GTE << val;
     WrappedBSON::update();
   }
 
   void appendGTE(const std::string& name,
                  const int val)
   {
-    *builder_ << name << mongo::GTE << val;
+    *builder_ << name << bson::GTE << val;
     WrappedBSON::update();
   }
 
@@ -209,7 +215,7 @@ public:
                    const double lower,
                    const double upper)
   {
-    *builder_ << name << mongo::GT << lower << mongo::LT << upper;
+    *builder_ << name << bson::GT << lower << bson::LT << upper;
     WrappedBSON::update();
   }
 
@@ -217,7 +223,7 @@ public:
                    const int lower,
                    const int upper)
   {
-    *builder_ << name << mongo::GT << lower << mongo::LT << upper;
+    *builder_ << name << bson::GT << lower << bson::LT << upper;
     WrappedBSON::update();
   }
 
@@ -225,7 +231,7 @@ public:
                             const double lower,
                             const double upper)
   {
-    *builder_ << name << mongo::GTE << lower << mongo::LTE << upper;
+    *builder_ << name << bson::GTE << lower << bson::LTE << upper;
     WrappedBSON::update();
   }
 
@@ -233,7 +239,7 @@ public:
                             const int lower,
                             const int upper)
   {
-    *builder_ << name << mongo::GTE << lower << mongo::LTE << upper;
+    *builder_ << name << bson::GTE << lower << bson::LTE << upper;
     WrappedBSON::update();
   }
 };
@@ -249,26 +255,32 @@ public:
 /// 
 /// Or:
 /// m = Metadata().append("x", 24).append("name", "foo");
-class MongoMetadata : public warehouse_ros::Metadata, public WrappedBSON
+class DummyMetadata : public warehouse_ros::Metadata, public WrappedBSON
 {
 public:
-  MongoMetadata() :
+  DummyMetadata() :
     WrappedBSON ()
   {
     initialize();
   }
 
-  MongoMetadata(const std::string& json) :
+  DummyMetadata(const std::string& json) :
     WrappedBSON (json)
   {}
 
-  MongoMetadata(const MongoMetadata& other) :
+  DummyMetadata(const DummyMetadata& other) :
     WrappedBSON(other)
   {}
 
-  MongoMetadata(const BSONObj& other) :
+  DummyMetadata(const BSONObj& other) :
     WrappedBSON(other)
   {}
+
+  void append(const std::string& name,
+              const char *val)
+  {
+    append(name, std::string(val));
+  }
 
   void append(const std::string& name,
               const std::string& val)
