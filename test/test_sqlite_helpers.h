@@ -30,12 +30,12 @@
 
 #include <geometry_msgs/Pose.h>
 #include <cstring>
-#include <warehouse_ros_dummy/metadata.h>
-#include <warehouse_ros_dummy/message_collection.h>
+#include <warehouse_ros_sqlite/metadata.h>
+#include <warehouse_ros_sqlite/message_collection.h>
 
 const double TOL=1e-3;
 using std::ostream;
-using namespace warehouse_ros_dummy;
+using namespace warehouse_ros_sqlite;
 
 namespace geometry_msgs
 {
@@ -52,12 +52,12 @@ inline bool operator==(const Pose& p1, const Pose& p2)
 
 }
 
-inline DummyMetadata& downcastMetadata(Metadata::ConstPtr metadata) {
-  return *(const_cast<DummyMetadata*>(static_cast<const DummyMetadata*>(metadata.get())));
+inline SQLiteMetadata& downcastMetadata(Metadata::ConstPtr metadata) {
+  return *(const_cast<SQLiteMetadata*>(static_cast<const SQLiteMetadata*>(metadata.get())));
 }
 
-inline DummyQuery& downcastQuery(Query::ConstPtr query) {
-  return *(const_cast<DummyQuery*>(static_cast<const DummyQuery*>(query.get())));
+inline SQLiteQuery& downcastQuery(Query::ConstPtr query) {
+  return *(const_cast<SQLiteQuery*>(static_cast<const SQLiteQuery*>(query.get())));
 }
 
 template <class T>

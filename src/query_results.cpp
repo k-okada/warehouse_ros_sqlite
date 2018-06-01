@@ -31,26 +31,26 @@
 /**
  * \file 
  * 
- * Implementation of DummyResultIterator.
+ * Implementation of SQLiteResultIterator.
  *
  * \author Bhaskara Marthi
  */
 
-#include <warehouse_ros_dummy/query_results.h>
+#include <warehouse_ros_sqlite/query_results.h>
 
-namespace warehouse_ros_dummy
+namespace warehouse_ros_sqlite
 {
 
-DummyResultIterator::DummyResultIterator(boost::shared_ptr<dummy::DBClientConnection> conn,
+SQLiteResultIterator::SQLiteResultIterator(boost::shared_ptr<sqlite::DBClientConnection> conn,
                                          const std::string& ns,
-                                         const dummy::Query& query) :
+                                         const sqlite::Query& query) :
   cursor_(new Cursor(conn->query(ns, query)))
 {
   if ((*cursor_)->more())
     next_ = (*cursor_)->nextSafe();
 }
 
-bool DummyResultIterator::next()
+bool SQLiteResultIterator::next()
 {
   ROS_ASSERT (next_);
   if ((*cursor_)->more())\
@@ -65,27 +65,26 @@ bool DummyResultIterator::next()
   }
 }
 
-bool DummyResultIterator::hasData() const
+bool SQLiteResultIterator::hasData() const
 {
   return (bool)next_;
 }
 
-warehouse_ros::Metadata::ConstPtr DummyResultIterator::metadata() const
+warehouse_ros::Metadata::ConstPtr SQLiteResultIterator::metadata() const
 {
   ROS_ASSERT(next_);
-  //return typename warehouse_ros::Metadata::ConstPtr(new DummyMetadata(next_->copy())); // FIXME
-  return typename warehouse_ros::Metadata::ConstPtr(new DummyMetadata(next_.get()));
+  //return typename warehouse_ros::Metadata::ConstPtr(new SQLiteMetadata(next_->copy())); // FIXME
+  return typename warehouse_ros::Metadata::ConstPtr(new SQLiteMetadata(next_.get()));
 }
 
-std::string DummyResultIterator::message() const
+std::string SQLiteResultIterator::message() const
 {
-  std::string id = (*next_)["_id"].OID().toString();
   int len;
-  const char *buf = (*next_)[id].binData(len);
+  const char *buf = (*next_)["_msg"].binData(len);
   return std::string(buf, buf+len);
 }
 
-bson::BSONObj DummyResultIterator::metadataRaw() const
+bson::BSONObj SQLiteResultIterator::metadataRaw() const
 {
   ROS_ASSERT(next_);
   //return next_->copy(); // FIXME

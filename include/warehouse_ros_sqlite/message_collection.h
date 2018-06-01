@@ -36,14 +36,14 @@
  * \author Bhaskara Marthi
  */
 
-#ifndef WAREHOUSE_ROS_DUMMY_MESSAGE_COLLECTION_H
-#define WAREHOUSE_ROS_DUMMY_MESSAGE_COLLECTION_H
+#ifndef WAREHOUSE_ROS_SQLITE_MESSAGE_COLLECTION_H
+#define WAREHOUSE_ROS_SQLITE_MESSAGE_COLLECTION_H
 
-#include <warehouse_ros_dummy/client.h>
-#include <warehouse_ros_dummy/query_results.h>
+#include <warehouse_ros_sqlite/client.h>
+#include <warehouse_ros_sqlite/query_results.h>
 #include <warehouse_ros/message_collection.h>
 
-namespace warehouse_ros_dummy
+namespace warehouse_ros_sqlite
 {
 
 using warehouse_ros::Metadata;
@@ -51,13 +51,13 @@ using warehouse_ros::Query;
 using warehouse_ros::MessageCollectionHelper;
 using warehouse_ros::ResultIteratorHelper;
 
-class DummyMessageCollection: public warehouse_ros::MessageCollectionHelper
+class SQLiteMessageCollection: public warehouse_ros::MessageCollectionHelper
 {
 public:
-  DummyMessageCollection(boost::shared_ptr<dummy::DBClientConnection> conn,
-                         const std::string& db_name,
-                         const std::string& collection_name);
-
+  SQLiteMessageCollection(boost::shared_ptr<sqlite::DBClientConnection> conn,
+                          const std::string& db_name,
+                          const std::string& collection_name);
+  
   bool initialize(const std::string& datatype, const std::string& md5);
 
   /// \post Ensure that there's an index on the given field.
@@ -66,7 +66,7 @@ public:
 
   /// \brief Insert a ROS message, together with some optional metadata,
   /// into the db
-  /// \throws dummy::DBException if unable to insert
+  /// \throws sqlite::DBException if unable to insert
   void insert(char* msg, size_t msg_size, Metadata::ConstPtr metadata);
 
   /// \retval Iterator range over matching messages
@@ -93,25 +93,25 @@ public:
   std::string collectionName() const;
 
   Query::Ptr createQuery() const {
-    return Query::Ptr(new DummyQuery());
+    return Query::Ptr(new SQLiteQuery());
   }
 
   Metadata::Ptr createMetadata() const {
-    return Metadata::Ptr(new DummyMetadata());
+    return Metadata::Ptr(new SQLiteMetadata());
   }
   
 private:
 
-  void listMetadata(dummy::Query& mquery, std::vector<bson::BSONObj>& metas);
+  void listMetadata(sqlite::Query& mquery, std::vector<bson::BSONObj>& metas);
 
-  inline DummyMetadata& downcastMetadata(Metadata::ConstPtr metadata) const {
-    return *(const_cast<DummyMetadata*>(static_cast<const DummyMetadata*>(metadata.get())));
+  inline SQLiteMetadata& downcastMetadata(Metadata::ConstPtr metadata) const {
+    return *(const_cast<SQLiteMetadata*>(static_cast<const SQLiteMetadata*>(metadata.get())));
   }
-  inline DummyQuery& downcastQuery(Query::ConstPtr query) const {
-    return *(const_cast<DummyQuery*>(static_cast<const DummyQuery*>(query.get())));
+  inline SQLiteQuery& downcastQuery(Query::ConstPtr query) const {
+    return *(const_cast<SQLiteQuery*>(static_cast<const SQLiteQuery*>(query.get())));
   }
 
-  boost::shared_ptr<dummy::DBClientConnection> conn_;
+  boost::shared_ptr<sqlite::DBClientConnection> conn_;
   const std::string ns_;
   const std::string db_;
   const std::string coll_;

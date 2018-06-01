@@ -36,22 +36,22 @@
  * \author Bhaskara Marthi
  */
 
-#include <warehouse_ros_dummy/database_connection.h>
+#include <warehouse_ros_sqlite/database_connection.h>
 #include <pluginlib/class_list_macros.h>
 
-namespace warehouse_ros_dummy
+namespace warehouse_ros_sqlite
 {
 
 using std::string;
 
-DummyDatabaseConnection::DummyDatabaseConnection() :
+SQLiteDatabaseConnection::SQLiteDatabaseConnection() :
   host_("localhost"),
   port_(27017),
   timeout_(60.0)
 {
 }
 
-bool DummyDatabaseConnection::setParams(const string& host, unsigned port, float timeout)
+bool SQLiteDatabaseConnection::setParams(const string& host, unsigned port, float timeout)
 {
   host_ = host;
   port_ = port;
@@ -59,23 +59,23 @@ bool DummyDatabaseConnection::setParams(const string& host, unsigned port, float
   return true;
 }
 
-bool DummyDatabaseConnection::setTimeout(float timeout)
+bool SQLiteDatabaseConnection::setTimeout(float timeout)
 {
   timeout_ = timeout;
   return true;
 }
 
-bool DummyDatabaseConnection::connect()
+bool SQLiteDatabaseConnection::connect()
 {
   const string db_address = (boost::format("%1%:%2%") % host_ % port_).str();
   const ros::WallTime end = ros::WallTime::now() + ros::WallDuration(timeout_);
 
   while (ros::ok() && ros::WallTime::now()<end)
   {
-    conn_.reset(new dummy::DBClientConnection());
+    conn_.reset(new sqlite::DBClientConnection());
     try
     {
-      ROS_DEBUG_STREAM_NAMED("db_connect", "Attempting to connect to DummyDB at " << db_address);
+      ROS_DEBUG_STREAM_NAMED("db_connect", "Attempting to connect to SQLiteDB at " << db_address);
       conn_->connect(db_address);
       if (!conn_->isFailed())
         break;
@@ -95,38 +95,34 @@ bool DummyDatabaseConnection::connect()
   return true;
 }
 
-bool DummyDatabaseConnection::isConnected()
+bool SQLiteDatabaseConnection::isConnected()
 {
   return ((bool)conn_ && !conn_->isFailed());
 }
 
-void DummyDatabaseConnection::dropDatabase(const string& db_name)
+void SQLiteDatabaseConnection::dropDatabase(const string& db_name)
 {
   if (!isConnected())
     throw warehouse_ros::DbConnectException("Cannot drop database");
   conn_->dropDatabase(db_name);
 }
 
-string DummyDatabaseConnection::messageType(const string& db, const string& coll)
+string SQLiteDatabaseConnection::messageType(const string& db, const string& coll)
 {
   if (!isConnected())
     throw warehouse_ros::DbConnectException("Cannot look up metatable.");
   const string meta_ns = db+".ros_message_collections";
-  std::auto_ptr<dummy::DBClientCursor> cursor = conn_->query(meta_ns, BSON("name" << coll));
+  std::auto_ptr<sqlite::DBClientCursor> cursor = conn_->query(meta_ns, BSON("name" << coll));
   bson::BSONObj obj = cursor->next();
   return obj.getStringField("type");
-  //bson::BSONObj obj = cursor->next_; // FIXME
-  //return obj.getStringField("type");
-  //boost::optional<WrappedBSON> obj = cursor->next_;
-  //return obj.get().getStringField("type");
 }
 
-MessageCollectionHelper::Ptr DummyDatabaseConnection::openCollectionHelper(const std::string& db_name,
-                                                                           const std::string& collection_name)
+MessageCollectionHelper::Ptr SQLiteDatabaseConnection::openCollectionHelper(const std::string& db_name,
+                                                                            const std::string& collection_name)
 {
-  return typename MessageCollectionHelper::Ptr(new DummyMessageCollection(conn_, db_name, collection_name));
+  return typename MessageCollectionHelper::Ptr(new SQLiteMessageCollection(conn_, db_name, collection_name));
 }
 
 } // namespace
 
-PLUGINLIB_EXPORT_CLASS( warehouse_ros_dummy::DummyDatabaseConnection, warehouse_ros::DatabaseConnection )
+PLUGINLIB_EXPORT_CLASS( warehouse_ros_sqlite::SQLiteDatabaseConnection, warehouse_ros::DatabaseConnection )

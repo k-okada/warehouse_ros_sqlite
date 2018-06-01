@@ -31,22 +31,22 @@
 /**
  * \file 
  * 
- * Implementation of DummyMessageCollection
+ * Implementation of SQLiteMessageCollection
  *
  * \author Bhaskara Marthi
  */
 
-#include <warehouse_ros_dummy/message_collection.h>
+#include <warehouse_ros_sqlite/message_collection.h>
 #include <std_msgs/String.h>
 #include <boost/shared_ptr.hpp>
 #include <boost/foreach.hpp>
 
-namespace warehouse_ros_dummy
+namespace warehouse_ros_sqlite
 {
 
 using std::string;
 
-DummyMessageCollection::DummyMessageCollection(boost::shared_ptr<dummy::DBClientConnection> conn,
+SQLiteMessageCollection::SQLiteMessageCollection(boost::shared_ptr<sqlite::DBClientConnection> conn,
                                                const string& db,
                                                const string& coll) :
   conn_(conn),
@@ -54,15 +54,17 @@ DummyMessageCollection::DummyMessageCollection(boost::shared_ptr<dummy::DBClient
   db_(db),
   coll_(coll)
 {
+  conn_->createDatabase(ns_);
 }
 
 
-bool DummyMessageCollection::initialize(const std::string& datatype, const std::string& md5)
+bool SQLiteMessageCollection::initialize(const std::string& datatype, const std::string& md5)
 {
   ensureIndex("creation_time");
 
   // Add to the metatable
   const string meta_ns = db_+".ros_message_collections";
+  conn_->createDatabase(meta_ns);
   if (!conn_->count(meta_ns, BSON("name" << coll_)))
   {
     ROS_DEBUG_NAMED("create_collection", "Inserting info for %s into metatable", coll_.c_str());
@@ -76,11 +78,11 @@ bool DummyMessageCollection::initialize(const std::string& datatype, const std::
   return true;
 }
 
-void DummyMessageCollection::ensureIndex(const string& field)
+void SQLiteMessageCollection::ensureIndex(const string& field)
 {
-  ROS_ERROR("%s(%s)", __PRETTY_FUNCTION__, field.c_str()); // FIXME
+  // JSON does not need to sure index? FIXME
   /*
-#if (DUMMYCLIENT_VERSION_MAJOR >= 1)
+#if (SQLITECLIENT_VERSION_MAJOR >= 1)
   conn_->createIndex(ns_, BSON(field << 1));
 #else
   conn_->ensureIndex(ns_, BSON(field << 1));
@@ -88,7 +90,7 @@ void DummyMessageCollection::ensureIndex(const string& field)
   */
 }
 
-void DummyMessageCollection::insert(char* msg, size_t msg_size, Metadata::ConstPtr metadata)
+void SQLiteMessageCollection::insert(char* msg, size_t msg_size, Metadata::ConstPtr metadata)
 {
   /// Get the BSON and id from the metadata
   bson::BSONObj bson = downcastMetadata(metadata);
@@ -100,27 +102,27 @@ void DummyMessageCollection::insert(char* msg, size_t msg_size, Metadata::ConstP
   builder.appendElements(bson);
 
   // Store in message in
-  builder.appendBinData(id.toString(), msg_size, bson::BinDataType::BinDataGeneral, (const uint8_t *)msg);
+  builder.appendBinData("_msg", msg_size, bson::BinDataType::BinDataGeneral, (const uint8_t *)msg);
 
   bson:BSONObj entry = builder.obj();
   ROS_DEBUG_NAMED("insert", "Inserting %s into %s", entry.toString().c_str(), ns_.c_str());
   conn_->insert(ns_, entry);
 }
 
-ResultIteratorHelper::Ptr DummyMessageCollection::query(Query::ConstPtr query,
+ResultIteratorHelper::Ptr SQLiteMessageCollection::query(Query::ConstPtr query,
                                                         const string& sort_by,
                                                         bool ascending) const
 {
-  dummy::Query mquery(downcastQuery(query));
+  sqlite::Query mquery(downcastQuery(query));
   if (sort_by.size() > 0)
     mquery.sort(sort_by, ascending ? 1 : -1);
   ROS_DEBUG_NAMED("query", "Sending query %s to %s", mquery.toString().c_str(), ns_.c_str());
-  return typename ResultIteratorHelper::Ptr(new DummyResultIterator(conn_, ns_, mquery));
+  return typename ResultIteratorHelper::Ptr(new SQLiteResultIterator(conn_, ns_, mquery));
 }
 
-void DummyMessageCollection::listMetadata(dummy::Query& mquery, std::vector<bson::BSONObj>& metas)
+void SQLiteMessageCollection::listMetadata(sqlite::Query& mquery, std::vector<bson::BSONObj>& metas)
 {
-  DummyResultIterator iter(conn_, ns_, mquery);
+  SQLiteResultIterator iter(conn_, ns_, mquery);
   while (iter.hasData())
   {
     metas.push_back(iter.metadataRaw());
@@ -128,9 +130,9 @@ void DummyMessageCollection::listMetadata(dummy::Query& mquery, std::vector<bson
   }
 }
 
-unsigned DummyMessageCollection::removeMessages(Query::ConstPtr query)
+unsigned SQLiteMessageCollection::removeMessages(Query::ConstPtr query)
 {
-  dummy::Query mquery(downcastQuery(query));
+  sqlite::Query mquery(downcastQuery(query));
   
   std::vector<bson::BSONObj> metas;
   listMetadata(mquery, metas);
@@ -142,7 +144,7 @@ unsigned DummyMessageCollection::removeMessages(Query::ConstPtr query)
   // Also remove the raw messages from gridfs
   for (std::vector<bson::BSONObj>::iterator it = metas.begin(); it != metas.end(); ++it)
   {
-    // dummy::OID id;
+    // sqlite::OID id;
     // (*it)["blob_id"].Val(id);
     // gfs_->removeFile(id.toString());
     ++num_removed;
@@ -150,10 +152,10 @@ unsigned DummyMessageCollection::removeMessages(Query::ConstPtr query)
   return num_removed;
 }
 
-void DummyMessageCollection::modifyMetadata(Query::ConstPtr q, Metadata::ConstPtr m)
+void SQLiteMessageCollection::modifyMetadata(Query::ConstPtr q, Metadata::ConstPtr m)
 {
   bson::BSONObj bson = downcastMetadata(m);
-  dummy::Query query(downcastQuery(q));
+  sqlite::Query query(downcastQuery(q));
 
   std::vector<bson::BSONObj> metas;
   listMetadata(query, metas);
@@ -180,12 +182,12 @@ void DummyMessageCollection::modifyMetadata(Query::ConstPtr q, Metadata::ConstPt
   conn_->update(ns_, query, new_meta);
 }
 
-unsigned DummyMessageCollection::count()
+unsigned SQLiteMessageCollection::count()
 {
   return conn_->count(ns_);
 }
 
-string DummyMessageCollection::collectionName() const
+string SQLiteMessageCollection::collectionName() const
 {
   return coll_;
 }

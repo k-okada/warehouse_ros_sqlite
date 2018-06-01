@@ -31,17 +31,19 @@
 /**
  * \file 
  * 
- * Test script for Dummy ros c++ interface
+ * Test script for SQLite ros c++ interface
  *
  * \author Bhaskara Marthi
  */
 
 // %Tag(CPP_CLIENT)%
 
-#include "test_dummy_helpers.h"
-#include <warehouse_ros_dummy/database_connection.h>
+#include "test_sqlite_helpers.h"
+#include <warehouse_ros_sqlite/database_connection.h>
 #include <boost/foreach.hpp>
 #include <gtest/gtest.h>
+
+#include <log4cxx/logger.h>
 
 namespace gm=geometry_msgs;
 using warehouse_ros::Metadata;
@@ -67,10 +69,10 @@ Metadata::Ptr makeMetadata(PoseCollection coll, const gm::Pose& p, const string&
   return meta;
 }
 
-TEST(DummyRos, DummyRos)
+TEST(SQLiteRos, SQLiteRos)
 {
   // Set up db
-  warehouse_ros_dummy::DummyDatabaseConnection conn;
+  warehouse_ros_sqlite::SQLiteDatabaseConnection conn;
   conn.setParams("localhost", 27017, 60.0);
   conn.connect();
 
@@ -104,7 +106,7 @@ TEST(DummyRos, DummyRos)
   EXPECT_EQ(1u, res.size());
   EXPECT_EQ("qux", res[0]->lookupString("name"));
   EXPECT_DOUBLE_EQ(53, res[0]->lookupDouble("x"));
-  
+
   // Set up query: position.x < 40 and position.y > 0.  Reverse order
   // by the "name" metadata field.  Also, here we pull the message itself, not
   // just the metadata.  Finally, we can't use the simplified construction
@@ -156,6 +158,11 @@ TEST(DummyRos, DummyRos)
 int main (int argc, char** argv)
 {
   ros::init(argc, argv, "client_test");
+
+  log4cxx::LoggerPtr my_logger = log4cxx::Logger::getLogger(ROSCONSOLE_DEFAULT_NAME);
+  // Set the logger for this package to output all statements
+  my_logger->setLevel(ros::console::g_level_lookup[ros::console::levels::Debug]);
+  
   ros::NodeHandle nh;
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

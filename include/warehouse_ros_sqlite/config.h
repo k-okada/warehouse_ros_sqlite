@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2008, Willow Garage, Inc.
+ * Copyright (c) 2013, Willow Garage, Inc.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,50 +31,15 @@
 /**
  * \file 
  * 
- * Db-level operations.  Most operations are in message_collection.h
+ * Mongo has different magic on how it deals with macros starting with Ubuntu Raring
+ * so we need to be careful on how we include the headers we need
  *
- * \author Bhaskara Marthi
+ * \author Ioan Sucan
  */
 
-#ifndef WAREHOUSE_ROS_DUMMY_DATABASE_CONNECTION_H
-#define WAREHOUSE_ROS_DUMMY_DATABASE_CONNECTION_H
+#ifndef WAREHOUSE_ROS_SQLITE_CONFIG_H
+#define WAREHOUSE_ROS_SQLITE_CONFIG_H
 
-#include <warehouse_ros_dummy/client.h>
-#include <warehouse_ros_dummy/message_collection.h>
-#include <warehouse_ros/database_connection.h>
-#include <boost/shared_ptr.hpp>
+#include "bson.h"
 
-namespace warehouse_ros_dummy
-{
-
-class DummyDatabaseConnection : public warehouse_ros::DatabaseConnection
-{
-public:
-  DummyDatabaseConnection();
-
-  bool setParams(const std::string& host, unsigned port, float timeout);
-
-  bool setTimeout(float timeout);
-
-  bool connect();
-
-  bool isConnected();
-
-  void dropDatabase(const std::string& db_name);
-
-  std::string messageType(const std::string& db_name, const std::string& collection_name);
-
-protected:
-  boost::shared_ptr<dummy::DBClientConnection> conn_;
-
-  std::string host_;
-  unsigned port_;
-  float timeout_;
-
-  MessageCollectionHelper::Ptr openCollectionHelper(const std::string& db_name,
-                                                    const std::string& collection_name);
-};
-
-} // namespace
-
-#endif // include guard
+#endif

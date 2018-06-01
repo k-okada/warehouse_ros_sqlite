@@ -31,35 +31,35 @@
 /**
  * \file 
  * 
- * Implementation of warehouse_ros::ResultIteratorHelper for dummy queries
+ * Implementation of warehouse_ros::ResultIteratorHelper for sqlite queries
  *
  * \author Bhaskara Marthi
  */
 
-#ifndef WAREHOUSE_ROS_DUMMY_QUERY_RESULTS_H
-#define WAREHOUSE_ROS_DUMMY_QUERY_RESULTS_H
+#ifndef WAREHOUSE_ROS_SQLITE_QUERY_RESULTS_H
+#define WAREHOUSE_ROS_SQLITE_QUERY_RESULTS_H
 
 #include <warehouse_ros/query_results.h>
-#include <warehouse_ros_dummy/client.h>
-#include <warehouse_ros_dummy/metadata.h>
+#include <warehouse_ros_sqlite/client.h>
+#include <warehouse_ros_sqlite/metadata.h>
 #include <warehouse_ros/query_results.h>
 #include <boost/optional.hpp>
 #include <memory>
 
-namespace warehouse_ros_dummy
+namespace warehouse_ros_sqlite
 {
 
-// To avoid some const-correctness issues we wrap Dummy's returned auto_ptr in
+// To avoid some const-correctness issues we wrap SQLite's returned auto_ptr in
 // another pointer
-typedef std::auto_ptr<dummy::DBClientCursor> Cursor;
+typedef std::auto_ptr<sqlite::DBClientCursor> Cursor;
 typedef boost::shared_ptr<Cursor> CursorPtr;
 
-class DummyResultIterator : public warehouse_ros::ResultIteratorHelper
+class SQLiteResultIterator : public warehouse_ros::ResultIteratorHelper
 {
 public:
-  DummyResultIterator(boost::shared_ptr<dummy::DBClientConnection> conn,
+  SQLiteResultIterator(boost::shared_ptr<sqlite::DBClientConnection> conn,
                       const std::string& ns,
-                      const dummy::Query& query);
+                      const sqlite::Query& query);
 
   bool next();
   bool hasData() const;

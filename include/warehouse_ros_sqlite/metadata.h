@@ -31,16 +31,16 @@
 /**
  * \file 
  * 
- * Define a couple of classes that wrap Dummy's BSON type
+ * Define a couple of classes that wrap SQLite's BSON type
  *
  * \author Bhaskara Marthi
  */
 
-#ifndef WAREHOUSE_ROS_DUMMY_METADATA_H
-#define WAREHOUSE_ROS_DUMMY_METADATA_H
+#ifndef WAREHOUSE_ROS_SQLITE_METADATA_H
+#define WAREHOUSE_ROS_SQLITE_METADATA_H
 
 // We have to include this top-level include here because
-// the dummy c++ library is not robust to reincludes
+// the sqlite c++ library is not robust to reincludes
 #ifdef __APPLE__
 #include <malloc/malloc.h>
 #else
@@ -48,10 +48,10 @@
 #endif
 
 #include <iostream>
-#include <warehouse_ros_dummy/config.h>
+#include <warehouse_ros_sqlite/config.h>
 #include <warehouse_ros/metadata.h>
 
-namespace warehouse_ros_dummy
+namespace warehouse_ros_sqlite
 {
 using bson::BSONObj;
 using bson::BSONObjBuilder;
@@ -107,17 +107,17 @@ protected:
 ///
 /// Or:
 /// q = Query().append("foo", 42).append("bar", LT, 24);
-class DummyQuery : public WrappedBSON, public warehouse_ros::Query
+class SQLiteQuery : public WrappedBSON, public warehouse_ros::Query
 {
 public:
-  DummyQuery() : WrappedBSON ()
+  SQLiteQuery() : WrappedBSON ()
   {}
 
-  DummyQuery(const DummyQuery& other) :
+  SQLiteQuery(const SQLiteQuery& other) :
     WrappedBSON(other)
   {}
 
-  DummyQuery(const BSONObj& other) :
+  SQLiteQuery(const BSONObj& other) :
     WrappedBSON(other)
   {}
 
@@ -255,24 +255,24 @@ public:
 /// 
 /// Or:
 /// m = Metadata().append("x", 24).append("name", "foo");
-class DummyMetadata : public warehouse_ros::Metadata, public WrappedBSON
+class SQLiteMetadata : public warehouse_ros::Metadata, public WrappedBSON
 {
 public:
-  DummyMetadata() :
+  SQLiteMetadata() :
     WrappedBSON ()
   {
     initialize();
   }
 
-  DummyMetadata(const std::string& json) :
+  SQLiteMetadata(const std::string& json) :
     WrappedBSON (json)
   {}
 
-  DummyMetadata(const DummyMetadata& other) :
+  SQLiteMetadata(const SQLiteMetadata& other) :
     WrappedBSON(other)
   {}
 
-  DummyMetadata(const BSONObj& other) :
+  SQLiteMetadata(const BSONObj& other) :
     WrappedBSON(other)
   {}
 

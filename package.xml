@@ -1,8 +1,8 @@
 <package>
-  <name>warehouse_ros_dummy</name>
+  <name>warehouse_ros_sqlite</name>
   <version>0.0.1</version>
   <description>
-    Dummy Implementation of warehouse_ros
+    SQLite Implementation of warehouse_ros
   </description>
   <author email="bhaskara@willowgarage.com">Bhaskara Marthi</author>
   <author email="cbrew@fetchrobotics.com">Connor Brew</author>
@@ -13,7 +13,7 @@
   <license>GNU Affero General Public License</license>
   <license>zlib</license>
 
-  <url>http://ros.org/wiki/warehouse_ros_dummy</url>
+  <url>http://ros.org/wiki/warehouse_ros_sqlite</url>
 
   <buildtool_depend>catkin</buildtool_depend>
 
@@ -23,16 +23,18 @@
   <build_depend>rostime</build_depend>
   <build_depend>rostest</build_depend>
   <build_depend>std_msgs</build_depend>
+  <build_depend>libsqlite3-dev</build_depend>
 
   <run_depend>warehouse_ros</run_depend>
   <run_depend>roscpp</run_depend>
   <run_depend>rostime</run_depend>
   <run_depend>std_msgs</run_depend>
+  <run_depend>libsqlite3-dev</run_depend>
 
   <test_depend>gtest</test_depend>
 
   <export>
-    <warehouse_ros plugin="${prefix}/dummy_database_connection_plugin_description.xml"/>
+    <warehouse_ros plugin="${prefix}/sqlite_database_connection_plugin_description.xml"/>
   </export>
 
 </package>
