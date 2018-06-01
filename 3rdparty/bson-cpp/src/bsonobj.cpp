@@ -206,7 +206,7 @@ namespace bson {
             if ( number() >= -std::numeric_limits< double >::max() &&
                     number() <= std::numeric_limits< double >::max() ) {
                 s.precision( 16 );
-                s << number();
+                s << std::scientific << number();
             }
             else {
                 StringBuilder ss;
