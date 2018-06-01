@@ -21,6 +21,7 @@
 #include "bson.h"
 
 namespace bson {
+    using namespace std;
 
     /** Create a BSONObj from a JSON <http://www.json.org> string.  In addition
      to the JSON extensions extensions described here
