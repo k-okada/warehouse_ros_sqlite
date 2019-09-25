@@ -112,7 +112,7 @@ string SQLiteDatabaseConnection::messageType(const string& db, const string& col
   if (!isConnected())
     throw warehouse_ros::DbConnectException("Cannot look up metatable.");
   const string meta_ns = db+".ros_message_collections";
-  std::auto_ptr<sqlite::DBClientCursor> cursor = conn_->query(meta_ns, BSON("name" << coll));
+  std::unique_ptr<sqlite::DBClientCursor> cursor = conn_->query(meta_ns, BSON("name" << coll));
   bson::BSONObj obj = cursor->next();
   return obj.getStringField("type");
 }
