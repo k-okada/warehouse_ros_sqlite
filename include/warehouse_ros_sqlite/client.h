@@ -31,6 +31,7 @@
 #define WAREHOUSE_ROS_SQLITE_CLIENT_H
 
 #include <stack>
+#include <numeric>
 
 #include <ros/ros.h>
 #include <bson.h>
