@@ -31,6 +31,7 @@
 #define WAREHOUSE_ROS_SQLITE_CLIENT_H
 
 #include <stack>
+#include <numeric>
 
 #include <ros/ros.h>
 #include <bson.h>
@@ -340,9 +341,9 @@ public:
     return;
   }
 
-  std::auto_ptr<DBClientCursor> query(const std::string ns, const sqlite::Query query)
+  std::unique_ptr<DBClientCursor> query(const std::string ns, const sqlite::Query query)
   {
-    std::auto_ptr<DBClientCursor> c(new DBClientCursor(this, ns , query.obj));
+    std::unique_ptr<DBClientCursor> c(new DBClientCursor(this, ns , query.obj));
 
     std::string cmd = "SELECT document FROM \"" + ns + "\" " + createSQLQuery(query);
     if ( query.obj.hasField("$orderby") ) {

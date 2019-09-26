@@ -51,7 +51,7 @@ namespace warehouse_ros_sqlite
 
 // To avoid some const-correctness issues we wrap SQLite's returned auto_ptr in
 // another pointer
-typedef std::auto_ptr<sqlite::DBClientCursor> Cursor;
+typedef std::unique_ptr<sqlite::DBClientCursor> Cursor;
 typedef boost::shared_ptr<Cursor> CursorPtr;
 
 class SQLiteResultIterator : public warehouse_ros::ResultIteratorHelper
